@@ -63,6 +63,7 @@ import android.service.notification.StatusBarNotification;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.app.RemoteInput;
 import android.text.SpannableString;
 import android.text.style.StyleSpan;
 import android.widget.RemoteViews;
@@ -1058,12 +1059,41 @@ class GenerateNotification {
             int buttonIcon = 0;
             if (button.has("icon"))
                buttonIcon = getResourceIcon(button.optString("icon"));
-            
-            mBuilder.addAction(buttonIcon, button.optString("text"), buttonPIntent);
+
+            String title = button.optString("text");
+
+            if (title.equalsIgnoreCase("reply")) {
+               // This portion overrides the regular reply button with the android specific one.
+               String replyLabel = "Enter your reply here";
+
+               // Initialise RemoteInput
+               RemoteInput remoteInput = new RemoteInput.Builder( "key_reply")
+                       .setLabel(replyLabel)
+                       .build();
+
+               Intent sendIntent = new Intent(currentContext, SendReceiver.class);
+               PendingIntent pendingIntent = PendingIntent.getBroadcast(currentContext, 0, sendIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+               // Notification Action with RemoteInput instance added.
+               NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
+                       buttonIcon, title, pendingIntent)
+                       .addRemoteInput(remoteInput)
+                       .setAllowGeneratedReplies(true)
+                       .build();
+
+               // Notification.Action instance added to Notification Builder.
+               mBuilder.addAction(replyAction);
+            } else {
+               mBuilder.addAction(buttonIcon, title, buttonPIntent);
+            }
          }
       } catch (Throwable t) {
          t.printStackTrace();
       }
+   }
+
+   private static void overrideReplyButton(){
+
    }
 
    private static void addAlertButtons(Context context, JSONObject gcmBundle, List<String> buttonsLabels, List<String> buttonsIds) {
