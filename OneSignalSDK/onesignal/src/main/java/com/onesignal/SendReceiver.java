@@ -11,7 +11,7 @@ public class SendReceiver extends BroadcastReceiver {
 
     public static OnInstantReplyListener onInstantReplyListener;
 
-    interface OnInstantReplyListener {
+    public interface OnInstantReplyListener {
         void onReply(String replyText);
     }
 
