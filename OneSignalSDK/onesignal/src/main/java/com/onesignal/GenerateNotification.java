@@ -1096,10 +1096,6 @@ class GenerateNotification {
       }
    }
 
-   private static void overrideReplyButton(){
-
-   }
-
    private static void addAlertButtons(Context context, JSONObject gcmBundle, List<String> buttonsLabels, List<String> buttonsIds) {
       try {
          addCustomAlertButtons(context, gcmBundle, buttonsLabels, buttonsIds);
