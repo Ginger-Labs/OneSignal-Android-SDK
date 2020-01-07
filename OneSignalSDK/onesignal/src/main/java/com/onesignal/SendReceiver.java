@@ -12,11 +12,11 @@ public class SendReceiver extends BroadcastReceiver {
     public static OnInstantReplyListener onInstantReplyListener;
 
     public interface OnInstantReplyListener {
-        void onReply(String replyText);
+        void onReply(String replyText, Intent intent);
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(Context context, final Intent intent) {
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
 
         if (remoteInput != null) {
@@ -26,7 +26,7 @@ public class SendReceiver extends BroadcastReceiver {
                     final PendingResult result = goAsync();
                     Thread thread = new Thread() {
                         public void run() {
-                            onInstantReplyListener.onReply(replySeq.toString());
+                            onInstantReplyListener.onReply(replySeq.toString(), intent);
                             // Do processing
                             result.finish();
                         }
