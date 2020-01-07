@@ -17,7 +17,6 @@ public class SendReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.e(this.getClass().getSimpleName(), "onReceive !!!");
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
 
         if (remoteInput != null) {
@@ -27,10 +26,8 @@ public class SendReceiver extends BroadcastReceiver {
                     final PendingResult result = goAsync();
                     Thread thread = new Thread() {
                         public void run() {
-                            int i = 1234;
                             onInstantReplyListener.onReply(replySeq.toString());
                             // Do processing
-                            result.setResultCode(i);
                             result.finish();
                         }
                     };
