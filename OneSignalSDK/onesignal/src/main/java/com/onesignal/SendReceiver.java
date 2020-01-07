@@ -17,7 +17,7 @@ public class SendReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
+        Log.e(this.getClass().getSimpleName(), "onReceive !!!");
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
 
         if (remoteInput != null) {
