@@ -9,11 +9,6 @@ import android.util.Log;
 
 public class SendReceiver extends BroadcastReceiver {
 
-    public static OnInstantReplyListener onInstantReplyListener;
-
-    public interface OnInstantReplyListener {
-        void onReply(String replyText, Intent intent);
-    }
 
     @Override
     public void onReceive(Context context, final Intent intent) {
@@ -22,11 +17,11 @@ public class SendReceiver extends BroadcastReceiver {
         if (remoteInput != null) {
             final CharSequence replySeq = remoteInput.getCharSequence("key_reply");
             if (replySeq != null) {
-                if (onInstantReplyListener != null) {
+                if (OneSignal.onInstantReplyListener != null) {
                     final PendingResult result = goAsync();
                     Thread thread = new Thread() {
                         public void run() {
-                            onInstantReplyListener.onReply(replySeq.toString(), intent);
+                            OneSignal.onInstantReplyListener.onReply(replySeq.toString(), intent);
                             // Do processing
                             result.finish();
                         }

@@ -107,6 +107,12 @@ public class OneSignal {
    // If the app is this amount time or longer in the background we will count the session as done
    static final long MIN_ON_SESSION_TIME_MILLIS = 30 * 1_000L;
 
+   public static OnInstantReplyListener onInstantReplyListener;
+
+   public interface OnInstantReplyListener {
+      void onReply(String replyText, Intent intent);
+   }
+
    /**
     * An interface used to process a OneSignal notification the user just tapped on.
     * <br/>
