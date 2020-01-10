@@ -42,7 +42,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.R.drawable;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -1071,12 +1070,12 @@ class GenerateNotification {
                        .setLabel(replyLabel)
                        .build();
 
-               Intent sendIntent = new Intent(currentContext, SendReceiver.class);
+               Intent sendIntent = new Intent(currentContext, SendService.class);
                sendIntent.putExtra("notificationId", notificationId);
                sendIntent.putExtra("notifdata", bundle.toString());
                sendIntent.putExtra("buttondata", button.toString());
 
-               PendingIntent pendingIntent = PendingIntent.getBroadcast(currentContext, notificationId, sendIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+               PendingIntent pendingIntent = PendingIntent.getService(currentContext, notificationId, sendIntent, 0);
 
                // Notification Action with RemoteInput instance added.
                NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(

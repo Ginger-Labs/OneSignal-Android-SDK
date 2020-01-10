@@ -1,33 +1,30 @@
 package com.onesignal;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.app.RemoteInput;
 import android.util.Log;
 
-public class SendReceiver extends BroadcastReceiver {
+public class SendService extends Service {
 
     @Override
-    public void onReceive(Context context, final Intent intent) {
-
-        Log.e(this.getClass().getSimpleName(), "onReceive: notificationId: " + intent.getIntExtra("notificationId", 0));
+    public int onStartCommand(final Intent intent, int flags, int startId) {
+        Log.e(this.getClass().getSimpleName(), "onStartCommand: ");
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
 
         if (remoteInput != null) {
             final CharSequence replySeq = remoteInput.getCharSequence("key_reply");
             if (replySeq != null) {
                 if (OneSignal.onInstantReplyListener != null) {
-                    final PendingResult result = goAsync();
                     Thread thread = new Thread() {
                         public void run() {
                             OneSignal.onInstantReplyListener.onReply(replySeq.toString(), intent);
-                            result.finish();
                         }
                     };
                     thread.start();
-
                 } else {
                     Log.e(this.getClass().getSimpleName(), "onReceive: Got instant reply but no onInstantReplyListener to fire.");
                 }
@@ -35,5 +32,12 @@ public class SendReceiver extends BroadcastReceiver {
                 Log.e(this.getClass().getSimpleName(), "onReceive: Instant reply CharSequence is null");
             }
         }
+        return START_STICKY;
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }
