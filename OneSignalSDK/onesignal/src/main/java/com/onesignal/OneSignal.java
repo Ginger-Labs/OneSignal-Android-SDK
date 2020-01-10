@@ -2992,7 +2992,7 @@ public class OneSignal {
       return id == null || OneSignal.isDuplicateNotification(id, context);
    }
 
-   static String getNotificationIdFromGCMJson(@Nullable JSONObject jsonObject) {
+   public static String getNotificationIdFromGCMJson(@Nullable JSONObject jsonObject) {
       if (jsonObject == null)
          return null;
       try {
