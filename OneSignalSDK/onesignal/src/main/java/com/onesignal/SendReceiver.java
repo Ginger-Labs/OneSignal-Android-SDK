@@ -9,7 +9,6 @@ import android.util.Log;
 
 public class SendReceiver extends BroadcastReceiver {
 
-
     @Override
     public void onReceive(Context context, final Intent intent) {
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
@@ -22,7 +21,6 @@ public class SendReceiver extends BroadcastReceiver {
                     Thread thread = new Thread() {
                         public void run() {
                             OneSignal.onInstantReplyListener.onReply(replySeq.toString(), intent);
-                            // Do processing
                             result.finish();
                         }
                     };
@@ -34,9 +32,6 @@ public class SendReceiver extends BroadcastReceiver {
             } else {
                 Log.e(this.getClass().getSimpleName(), "onReceive: Instant reply CharSequence is null");
             }
-
         }
-
     }
-
 }

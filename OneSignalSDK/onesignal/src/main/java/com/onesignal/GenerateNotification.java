@@ -1076,7 +1076,7 @@ class GenerateNotification {
                sendIntent.putExtra("notifdata", bundle.toString());
                sendIntent.putExtra("buttondata", button.toString());
 
-               PendingIntent pendingIntent = PendingIntent.getBroadcast(currentContext, 0, sendIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+               PendingIntent pendingIntent = PendingIntent.getBroadcast(currentContext, 0, sendIntent, PendingIntent.FLAG_ONE_SHOT);
 
                // Notification Action with RemoteInput instance added.
                NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
