@@ -1011,7 +1011,7 @@ public class OneSignal {
                OneSignalPrefs.PREFS_OS_RECEIVE_RECEIPTS_ENABLED,
                remoteParams.receiveReceiptEnabled
             );
-           
+
             OutcomesUtils.saveOutcomesParams(params.outcomesParams);
 
             NotificationChannelManager.processChannelList(
@@ -1234,7 +1234,7 @@ public class OneSignal {
       // Make sure without privacy consent, onAppFocus returns early
       if (shouldLogUserPrivacyConsentErrorMessageForMethodName("onAppFocus"))
          return;
-      
+
       if (OSUtils.shouldLogMissingAppIdError(appId))
          return;
 
@@ -2085,15 +2085,19 @@ public class OneSignal {
       if (!defaultOpenActionDisabled)
          urlOpened = openURLFromNotification(inContext, data);
 
-      // Check if the notification click should lead to a DIRECT session
-      if (shouldInitDirectSessionFromNotificationOpen(inContext, fromAlert, urlOpened, defaultOpenActionDisabled)) {
-         // We want to set the app entry state to NOTIFICATION_CLICK when coming from background
-         appEntryState = AppEntryAction.NOTIFICATION_CLICK;
-         sessionManager.onDirectSessionFromNotificationOpen(notificationId);
-      }
+      startTheAppFromNotification(inContext, fromAlert, urlOpened, defaultOpenActionDisabled, notificationId);
 
       runNotificationOpenedCallback(data, true, fromAlert);
    }
+
+    public static void startTheAppFromNotification(Context context, boolean fromAlert, boolean urlOpened, boolean defaultOpenActionDisabled, String notificationId) {
+        // Check if the notification click should lead to a DIRECT session
+        if (shouldInitDirectSessionFromNotificationOpen(context, fromAlert, urlOpened, defaultOpenActionDisabled)) {
+            // We want to set the app entry state to NOTIFICATION_CLICK when coming from background
+            appEntryState = AppEntryAction.NOTIFICATION_CLICK;
+            sessionManager.onDirectSessionFromNotificationOpen(notificationId);
+        }
+    }
 
    static boolean startOrResumeApp(Context inContext) {
       Intent launchIntent = inContext.getPackageManager().getLaunchIntentForPackage(inContext.getPackageName());
@@ -2992,7 +2996,7 @@ public class OneSignal {
       return id == null || OneSignal.isDuplicateNotification(id, context);
    }
 
-   public static String getNotificationIdFromGCMJson(@Nullable JSONObject jsonObject) {
+   static String getNotificationIdFromGCMJson(@Nullable JSONObject jsonObject) {
       if (jsonObject == null)
          return null;
       try {
