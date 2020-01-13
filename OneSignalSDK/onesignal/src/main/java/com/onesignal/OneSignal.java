@@ -2079,18 +2079,17 @@ public class OneSignal {
       if (trackFirebaseAnalytics != null && getFirebaseAnalyticsEnabled())
          trackFirebaseAnalytics.trackOpenedEvent(generateOsNotificationOpenResult(data, true, fromAlert));
 
-      boolean urlOpened = false;
       boolean defaultOpenActionDisabled = "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
 
-      if (!defaultOpenActionDisabled)
-         urlOpened = openURLFromNotification(inContext, data);
-
-      startTheAppFromNotification(inContext, fromAlert, urlOpened, defaultOpenActionDisabled, notificationId);
+      startTheAppFromNotification(inContext, data, fromAlert, defaultOpenActionDisabled, notificationId);
 
       runNotificationOpenedCallback(data, true, fromAlert);
    }
 
-    public static void startTheAppFromNotification(Context context, boolean fromAlert, boolean urlOpened, boolean defaultOpenActionDisabled, String notificationId) {
+    public static void startTheAppFromNotification(Context context, JSONArray data, boolean fromAlert, boolean defaultOpenActionDisabled, String notificationId) {
+       boolean urlOpened = false;
+       if (!defaultOpenActionDisabled)
+           urlOpened = openURLFromNotification(context, data);
         // Check if the notification click should lead to a DIRECT session
         if (shouldInitDirectSessionFromNotificationOpen(context, fromAlert, urlOpened, defaultOpenActionDisabled)) {
             // We want to set the app entry state to NOTIFICATION_CLICK when coming from background
