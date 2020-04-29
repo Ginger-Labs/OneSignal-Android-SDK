@@ -40,12 +40,28 @@ import java.util.Set;
 
 class OneSignalPrefs {
 
+    // TODO: Remove this once the tasks below have been finished...
+    //  1. Fix all of the SharedPreference Keys so they are organized by usage with comments
+    //  ex.
+    //   // In-App Messaging
+    //   public static final String PREFS_OS_CACHED_IAMS = "PREFS_OS_CACHED_IAMS";
+    //   public static final String PREFS_OS_DISMISSED_IAMS = "PREFS_OS_DISPLAYED_IAMS";
+    //   public static final String PREFS_OS_IMPRESSIONED_IAMS = "PREFS_OS_IMPRESSIONED_IAMS";
+    //   public static final String PREFS_OS_CLICKED_CLICK_IDS_IAMS = "PREFS_OS_CLICKED_CLICK_IDS_IAMS";
+    //  2. Match keys with value names
+    //  ex.
+    //   public static final String PREFS_OS_LAST_LOCATION_TIME = "OS_LAST_LOCATION_TIME";
+    //  3. Follow syntax and make new names relevant (specific and as short as possible)
+    //  ex.
+    //   Start with prefix "PREFS_OS_" + "LAST_LOCATION_TIME"
+
     // SharedPreferences Instances
     public static final String PREFS_ONESIGNAL = OneSignal.class.getSimpleName();
     public static final String PREFS_PLAYER_PURCHASES = "GTPlayerPurchases";
     public static final String PREFS_TRIGGERS = "OneSignalTriggers";
 
-    // PREFERENCES KEYS
+    // SharedPreference Keys
+    // Unorganized Keys
     public static final String PREFS_OS_LAST_LOCATION_TIME = "OS_LAST_LOCATION_TIME";
     public static final String PREFS_GT_SOUND_ENABLED = "GT_SOUND_ENABLED";
     public static final String PREFS_OS_LAST_SESSION_TIME = "OS_LAST_SESSION_TIME";
@@ -56,7 +72,6 @@ class OneSignalPrefs {
     public static final String PREFS_OS_FILTER_OTHER_GCM_RECEIVERS = "OS_FILTER_OTHER_GCM_RECEIVERS";
     public static final String PREFS_GT_APP_ID = "GT_APP_ID";
     public static final String PREFS_GT_PLAYER_ID = "GT_PLAYER_ID";
-    public static final String PREFS_OS_EMAIL_ID = "OS_EMAIL_ID";
     public static final String PREFS_GT_UNSENT_ACTIVE_TIME = "GT_UNSENT_ACTIVE_TIME";
     public static final String PREFS_OS_UNSENT_ATTRIBUTED_ACTIVE_TIME = "OS_UNSENT_ATTRIBUTED_ACTIVE_TIME";
     public static final String PREFS_ONESIGNAL_USERSTATE_DEPENDVALYES_ = "ONESIGNAL_USERSTATE_DEPENDVALYES_";
@@ -66,8 +81,6 @@ class OneSignalPrefs {
     public static final String PREFS_ONESIGNAL_PLAYER_ID_LAST = "ONESIGNAL_PLAYER_ID_LAST";
     public static final String PREFS_ONESIGNAL_PUSH_TOKEN_LAST = "ONESIGNAL_PUSH_TOKEN_LAST";
     public static final String PREFS_ONESIGNAL_PERMISSION_ACCEPTED_LAST = "ONESIGNAL_PERMISSION_ACCEPTED_LAST";
-    public static final String PREFS_ONESIGNAL_EMAIL_ID_LAST = "PREFS_ONESIGNAL_EMAIL_ID_LAST";
-    public static final String PREFS_ONESIGNAL_EMAIL_ADDRESS_LAST = "PREFS_ONESIGNAL_EMAIL_ADDRESS_LAST";
     public static final String PREFS_GT_DO_NOT_SHOW_MISSING_GPS = "GT_DO_NOT_SHOW_MISSING_GPS";
     public static final String PREFS_ONESIGNAL_SUBSCRIPTION = "ONESIGNAL_SUBSCRIPTION";
     public static final String PREFS_ONESIGNAL_SYNCED_SUBSCRIPTION = "ONESIGNAL_SYNCED_SUBSCRIPTION";
@@ -75,11 +88,18 @@ class OneSignalPrefs {
     public static final String PREFS_ONESIGNAL_USER_PROVIDED_CONSENT = "ONESIGNAL_USER_PROVIDED_CONSENT";
     public static final String PREFS_OS_ETAG_PREFIX = "PREFS_OS_ETAG_PREFIX_";
     public static final String PREFS_OS_HTTP_CACHE_PREFIX = "PREFS_OS_HTTP_CACHE_PREFIX_";
+    // Email
+    public static final String PREFS_OS_EMAIL_ID = "OS_EMAIL_ID";
+    public static final String PREFS_ONESIGNAL_EMAIL_ID_LAST = "PREFS_ONESIGNAL_EMAIL_ID_LAST";
+    public static final String PREFS_ONESIGNAL_EMAIL_ADDRESS_LAST = "PREFS_ONESIGNAL_EMAIL_ADDRESS_LAST";
+    // In-App Messaging
     public static final String PREFS_OS_CACHED_IAMS = "PREFS_OS_CACHED_IAMS";
-    public static final String PREFS_OS_DISPLAYED_IAMS = "PREFS_OS_DISPLAYED_IAMS";
+    public static final String PREFS_OS_DISMISSED_IAMS = "PREFS_OS_DISPLAYED_IAMS";
     public static final String PREFS_OS_IMPRESSIONED_IAMS = "PREFS_OS_IMPRESSIONED_IAMS";
     public static final String PREFS_OS_CLICKED_CLICK_IDS_IAMS = "PREFS_OS_CLICKED_CLICK_IDS_IAMS";
+    // Receive Receipts (aka Confirmed Deliveries)
     public static final String PREFS_OS_RECEIVE_RECEIPTS_ENABLED = "PREFS_OS_RECEIVE_RECEIPTS_ENABLED";
+    // Outcomes
     public static final String PREFS_OS_LAST_ATTRIBUTED_NOTIFICATION_OPEN = "PREFS_OS_LAST_ATTRIBUTED_NOTIFICATION_OPEN";
     public static final String PREFS_OS_LAST_NOTIFICATIONS_RECEIVED = "PREFS_OS_LAST_NOTIFICATIONS_RECEIVED";
     public static final String PREFS_OS_NOTIFICATION_LIMIT = "PREFS_OS_NOTIFICATION_LIMIT";
@@ -90,7 +110,7 @@ class OneSignalPrefs {
     public static final String PREFS_OS_OUTCOMES_CURRENT_SESSION = "PREFS_OS_OUTCOMES_CURRENT_SESSION";
     public static final String PREFS_OS_UNATTRIBUTED_UNIQUE_OUTCOME_EVENTS_SENT = "PREFS_OS_UNATTRIBUTED_UNIQUE_OUTCOME_EVENTS_SENT";
 
-    // PLAYER PURCHASE KEYS
+    // Player Purchase Keys
     static final String PREFS_PURCHASE_TOKENS = "purchaseTokens";
     static final String PREFS_EXISTING_PURCHASES = "ExistingPurchases";
 
@@ -103,7 +123,7 @@ class OneSignalPrefs {
     }
 
     public static class WritePrefHandlerThread extends HandlerThread {
-        public Handler mHandler;
+        private Handler mHandler;
 
         private static final int WRITE_CALL_DELAY_TO_BUFFER_MS = 200;
         private long lastSyncTime = 0L;
@@ -112,20 +132,103 @@ class OneSignalPrefs {
             super(name);
         }
 
-        void startDelayedWrite() {
+        private synchronized void startDelayedWrite() {
+            // A Context is required to write,
+            //   if not available now later OneSignal.setContext will call this again.
+            if (OneSignal.appContext == null)
+                return;
+
             if (mHandler == null) {
-                start();
+                startThread();
                 mHandler = new Handler(getLooper());
             }
 
-            synchronized (mHandler) {
-                mHandler.removeCallbacksAndMessages(null);
-                if (lastSyncTime == 0)
-                    lastSyncTime = System.currentTimeMillis();
+            mHandler.removeCallbacksAndMessages(null);
+            if (lastSyncTime == 0)
+                lastSyncTime = System.currentTimeMillis();
 
-                long delay = lastSyncTime - System.currentTimeMillis() + WRITE_CALL_DELAY_TO_BUFFER_MS;
+            long delay = lastSyncTime - System.currentTimeMillis() + WRITE_CALL_DELAY_TO_BUFFER_MS;
+            mHandler.postDelayed(getNewRunnable(), delay);
+        }
 
-                mHandler.postDelayed(getNewRunnable(), delay);
+        /**
+         * Attempt to start the thread used by this HandlerThread
+         * It may fail due to the following:
+         *   - InternalError - Thread starting during runtime shutdown
+         *   - OutOfMemoryError - pthread_create (####KB stack) failed: Try again
+         * If it does throw we want to catch then save the error and rethrow
+         * If startThread is called a 2nd time we will rethrowing the first exception
+         *   - Otherwise Thread.start will just throw IllegalThreadStateException
+         * Normally this catch and rethrow would not be needed however somewhere in this
+         *   SDK code base or a consumer of this SDK is catching first exception and
+         *   silently ignoring it. Resulting in the true causing of a crash being unknown.
+         * See https://github.com/OneSignal/OneSignal-Android-SDK/issues/917#issuecomment-600472976
+         *
+         * Future: We may want to use this strategy for all Thread.start calls.
+         *         And limit thread usages, using mostly coroutines instead.
+         */
+
+        private Error threadStartError;
+        private RuntimeException threadStartRuntimeException;
+        private Throwable threadStartThrowable;
+
+        private void startThread() {
+            if (threadStartError != null)
+                throw threadStartError;
+
+            if (threadStartRuntimeException != null)
+                throw threadStartRuntimeException;
+
+            // Ideally we would just throw threadStartThrowable here,
+            //   however we can't without adding throws to this method's signature.
+            // If this is done we would have to add throws all the way up the stack to
+            //   to public SDK methods which can't be done at this time nor would
+            //   "throws Throwable" be a good public signature.
+            if (threadStartThrowable != null) {
+                // The following lines turn a Throwable into a RuntimeException
+                //   to workaround the the throwable signature noted above.
+                RuntimeException exception = new RuntimeException(
+                        threadStartThrowable.getClass().getName() +
+                            ": " +
+                            threadStartThrowable.getMessage(),
+                        threadStartThrowable
+                );
+                exception.setStackTrace(threadStartThrowable.getStackTrace());
+                throw exception;
+            }
+
+            try {
+                start();
+            } catch (InternalError e) {
+                // Thread starting during runtime shutdown
+                threadStartError = e;
+                throw e;
+            }
+            catch (OutOfMemoryError e) {
+                // pthread_create (1040KB stack) failed: Try again
+                threadStartError = e;
+                throw e;
+            }
+            catch (Error t) {
+                // Possibly some other error we didn't expect Thread.start() to throw
+                threadStartError = t;
+                throw t;
+            }
+            catch (IllegalThreadStateException e) {
+                // Adds the state of the thread to IllegalThreadStateException to provide more details
+                IllegalThreadStateException exception =
+                    new IllegalThreadStateException("Thread has state: " + this.getState());
+                exception.setStackTrace(e.getStackTrace());
+                threadStartRuntimeException = exception;
+                throw exception;
+            }
+            catch (RuntimeException e) {
+                threadStartRuntimeException = e;
+                throw e;
+            }
+            catch (Throwable t) {
+                threadStartThrowable = t;
+                throw t;
             }
         }
 
@@ -139,10 +242,6 @@ class OneSignalPrefs {
         }
 
         private void flushBufferToDisk() {
-            // A flush will be triggered later once a context is set via OneSignal.setAppContext(...)
-            if (OneSignal.appContext == null)
-                return;
-
             for (String pref : prefsToApply.keySet()) {
                 SharedPreferences prefsToWrite = getSharedPrefsByName(pref);
                 SharedPreferences.Editor editor = prefsToWrite.edit();

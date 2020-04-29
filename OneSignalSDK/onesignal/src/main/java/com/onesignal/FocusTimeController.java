@@ -12,15 +12,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 /**
  * Entry points that could cause on_focus to fire:
  * 1. OSSessionManager.session changed (onSessionEnded) - Send any attributed session time
  * 2. App is foregrounded (appForegrounded) - Set start focused time
  * 3. App is backgrounded (appBackgrounded) - Kick off job to sync when session ends
  */
-
-
 class FocusTimeController {
    // Only present if app is currently in focus.
    @Nullable private Long timeFocusedAtMs;
@@ -66,7 +63,7 @@ class FocusTimeController {
       if (OneSignal.isForeground())
          return;
 
-      for(FocusTimeProcessorBase focusTimeProcessor : focusTimeProcessors)
+      for (FocusTimeProcessorBase focusTimeProcessor : focusTimeProcessors)
          focusTimeProcessor.syncUnsentTimeFromSyncJob();
    }
 
@@ -75,7 +72,7 @@ class FocusTimeController {
       if (timeElapsed == null)
         return false;
 
-      for(FocusTimeProcessorBase focusTimeProcessor : focusTimeProcessors)
+      for (FocusTimeProcessorBase focusTimeProcessor : focusTimeProcessors)
          focusTimeProcessor.addTime(timeElapsed, lastSessionResult.session, focusType);
       return true;
    }
@@ -239,7 +236,7 @@ class FocusTimeController {
 
       private @NonNull JSONObject generateOnFocusPayload(long totalTimeActive) throws JSONException {
          JSONObject jsonBody = new JSONObject()
-            .put("app_id", OneSignal.appId)
+            .put("app_id", OneSignal.getSavedAppId())
             .put("type", 1) // Always 1, where this type means do NOT increase session_count
             .put("state", "ping") // Always ping, other types are not used
             .put("active_time", totalTimeActive)

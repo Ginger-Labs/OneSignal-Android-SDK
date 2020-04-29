@@ -1,9 +1,17 @@
 package com.onesignal;
 
+import android.support.annotation.Nullable;
+
+import com.onesignal.OneSignalStateSynchronizer.UserStateSynchronizerType;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 class UserStatePushSynchronizer extends UserStateSynchronizer {
+
+    UserStatePushSynchronizer() {
+        super(UserStateSynchronizerType.PUSH);
+    }
 
     @Override
     protected UserState newUserState(String inPersistKey, boolean load) {
@@ -27,6 +35,13 @@ class UserStatePushSynchronizer extends UserStateSynchronizer {
                 @Override
                 void onSuccess(String responseStr) {
                     serverSuccess = true;
+
+                    // This should not typically come from the server as null or empty, but due to Issue #904
+                    // This check is added and will prevent further crashes
+                    // https://github.com/OneSignal/OneSignal-Android-SDK/issues/904
+                    if (responseStr == null || responseStr.isEmpty())
+                        responseStr = "{}";
+
                     try {
                         JSONObject lastGetTagsResponse = new JSONObject(responseStr);
                         if (lastGetTagsResponse.has("tags")) {
@@ -53,6 +68,13 @@ class UserStatePushSynchronizer extends UserStateSynchronizer {
 
         synchronized(syncLock) {
             return new GetTagsResult(serverSuccess, JSONUtils.getJSONObjectWithoutBlankValues(toSyncUserState.syncValues, "tags"));
+        }
+    }
+
+    @Override
+    @Nullable String getExternalId(boolean fromServer) {
+        synchronized(syncLock) {
+            return toSyncUserState.syncValues.optString("external_user_id", null);
         }
     }
 

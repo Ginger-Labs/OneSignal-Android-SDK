@@ -41,7 +41,6 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 
-import com.onesignal.BuildConfig;
 import com.onesignal.MockOutcomesUtils;
 import com.onesignal.OSEmailSubscriptionObserver;
 import com.onesignal.OSEmailSubscriptionState;
@@ -76,8 +75,8 @@ import com.onesignal.ShadowNotificationManagerCompat;
 import com.onesignal.ShadowOSUtils;
 import com.onesignal.ShadowOneSignal;
 import com.onesignal.ShadowOneSignalRestClient;
+import com.onesignal.ShadowPushRegistratorADM;
 import com.onesignal.ShadowPushRegistratorGCM;
-import com.onesignal.ShadowReceiveReceiptController;
 import com.onesignal.ShadowRoboNotificationManager;
 import com.onesignal.StaticResetHelper;
 import com.onesignal.SyncJobService;
@@ -89,7 +88,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -119,11 +117,15 @@ import java.util.regex.Pattern;
 import static com.onesignal.OneSignalPackagePrivateHelper.GcmBroadcastReceiver_processBundle;
 import static com.onesignal.OneSignalPackagePrivateHelper.NotificationBundleProcessor_Process;
 import static com.onesignal.OneSignalPackagePrivateHelper.NotificationOpenedProcessor_processFromContext;
+import static com.onesignal.OneSignalPackagePrivateHelper.OneSignal_setAppId;
 import static com.onesignal.OneSignalPackagePrivateHelper.bundleAsJSONObject;
 import static com.onesignal.ShadowOneSignalRestClient.REST_METHOD;
 import static com.test.onesignal.GenerateNotificationRunner.getBaseNotifBundle;
+import static com.test.onesignal.RestClientAsserts.assertAmazonPlayerCreateAtIndex;
+import static com.test.onesignal.RestClientAsserts.assertAndroidPlayerCreateAtIndex;
 import static com.test.onesignal.RestClientAsserts.assertOnFocusAtIndex;
 import static com.test.onesignal.RestClientAsserts.assertOnFocusAtIndexDoesNotHaveKeys;
+import static com.test.onesignal.RestClientAsserts.assertOnSessionAtIndex;
 import static com.test.onesignal.RestClientAsserts.assertPlayerCreatePushAtIndex;
 import static com.test.onesignal.RestClientAsserts.assertRemoteParamsAtIndex;
 import static com.test.onesignal.RestClientAsserts.assertRestCalls;
@@ -141,7 +143,6 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.robolectric.Shadows.shadowOf;
@@ -150,6 +151,7 @@ import static org.robolectric.Shadows.shadowOf;
         instrumentedPackages = { "com.onesignal" },
         shadows = {
             ShadowOneSignalRestClient.class,
+            ShadowPushRegistratorADM.class,
             ShadowPushRegistratorGCM.class,
             ShadowOSUtils.class,
             ShadowAdvertisingIdProviderGPS.class,
@@ -196,6 +198,16 @@ public class MainOneSignalClassRunner {
       };
    }
 
+   private static JSONObject lastExternalUserIdResponse;
+   private static OneSignal.OSExternalUserIdUpdateCompletionHandler getExternalUserIdUpdateCompletionHandler() {
+      return new OneSignal.OSExternalUserIdUpdateCompletionHandler() {
+         @Override
+         public void onComplete(JSONObject results) {
+            lastExternalUserIdResponse = results;
+         }
+      };
+   }
+
    private static void GetTags() {
       OneSignal.getTags(new OneSignal.GetTagsHandler() {
          @Override
@@ -210,6 +222,7 @@ public class MainOneSignalClassRunner {
 
       notificationOpenedMessage = null;
       lastGetTags = null;
+      lastExternalUserIdResponse = null;
 
       TestHelpers.beforeTestInitAndCleanup();
    }
@@ -247,7 +260,6 @@ public class MainOneSignalClassRunner {
       cleanUp();
    }
 
-
    @Test
    public void testInitFromApplicationContext() throws Exception {
       // Application.onCreate
@@ -268,6 +280,86 @@ public class MainOneSignalClassRunner {
       blankActivityController.resume();
       threadAndTaskWait();
       assertNotNull(ShadowOneSignalRestClient.lastPost);
+   }
+
+   @Test
+   public void testDeviceTypeIsAndroid_forPlayerCreate() throws Exception {
+      // 1. Init OneSignal so the app id is cached
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 2. Make sure device_type is Android (1) in player create
+      assertAndroidPlayerCreateAtIndex(1);
+   }
+
+   @Test
+   public void testDeviceTypeIsAmazon_forPlayerCreate() throws Exception {
+      // 1. Mock Amazon device type for this test
+      ShadowOSUtils.mockAmazonDevice();
+
+      // 2. Init OneSignal so the app id is cached
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 3. Make sure device_type is Amazon (2) in player create
+      assertAmazonPlayerCreateAtIndex(1);
+   }
+
+   @Test
+   public void testDeviceTypeIsAndroid_withoutOneSignalInit() throws Exception {
+      // 1. Init OneSignal so the app id is cached
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 2. Background app
+      blankActivityController.pause();
+      threadAndTaskWait();
+
+      // 3. Restart OneSignal and clear the ShadowPushRegistratorADM statics
+      restartAppAndElapseTimeToNextSession();
+      threadAndTaskWait();
+
+      // 4. Set OneSignal.appId and context simulating a background sync doing so
+      OneSignal.setAppContext(blankActivity.getApplicationContext());
+      OneSignal_setAppId(ONESIGNAL_APP_ID);
+
+      // 5. Foreground app and trigger new session
+      blankActivityController.resume();
+      threadAndTaskWait();
+
+      // 6. Make sure device_type is Android (1) in player create and on_session
+      assertAndroidPlayerCreateAtIndex(1);
+      assertOnSessionAtIndex(3);
+   }
+
+   @Test
+   public void testDeviceTypeIsAmazon_withoutOneSignalInit() throws Exception {
+      // 1. Mock Amazon device type for this test
+      ShadowOSUtils.mockAmazonDevice();
+
+      // 2. Init OneSignal so the app id is cached
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 3. Background the app
+      blankActivityController.pause();
+      threadAndTaskWait();
+
+      // 4. Restart the entire OneSignal and clear the ShadowPushRegistratorADM statics
+      restartAppAndElapseTimeToNextSession();
+      threadAndTaskWait();
+
+      // 5. Set OneSignal.appId and context simulating a background sync doing so
+      OneSignal.setAppContext(blankActivity.getApplicationContext());
+      OneSignal_setAppId(ONESIGNAL_APP_ID);
+
+      // 6. Foreground app and trigger new session
+      blankActivityController.resume();
+      threadAndTaskWait();
+
+      // 7. Make sure device_type is Android (1) in player create and on_session
+      assertAmazonPlayerCreateAtIndex(1);
+      assertOnSessionAtIndex(3);
    }
 
    /**
@@ -3822,6 +3914,211 @@ public class MainOneSignalClassRunner {
    }
 
    @Test
+   public void sendExternalUserId_withCompletionHandler() throws Exception {
+      String testExternalId = "test_ext_id";
+
+      // 1. Init OneSignal
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 2. Attempt to set external user id with callback
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 3. Make sure lastExternalUserIdResponse is equal to the expected response
+      JSONObject expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : true" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+   }
+
+    @Test
+    public void sendDifferentExternalUserId_withCompletionHandler() throws Exception {
+        String testExternalId = "test_ext_id_1";
+
+        // 1. Init OneSignal
+        OneSignalInit();
+        threadAndTaskWait();
+
+        // 2. Attempt to set external user id with callback
+        OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+        threadAndTaskWait();
+
+       // 3. Make sure lastExternalUserIdResponse is equal to the expected response
+       JSONObject expectedExternalUserIdResponse = new JSONObject(
+               "{" +
+               "   \"push\" : {" +
+               "      \"success\" : true" +
+               "   }" +
+               "}"
+       );
+       assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+
+        // 4. Change test external user id to send
+        testExternalId = "test_ext_id_2";
+
+        // 5. Attempt to set same exact external user id with callback
+        OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+        threadAndTaskWait();
+
+       // 6. Make sure lastExternalUserIdResponse is equal to the expected response
+       assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+    }
+
+   @Test
+   public void sendSameExternalUserId_withCompletionHandler() throws Exception {
+      String testExternalId = "test_ext_id";
+
+      // 1. Init OneSignal
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 2. Attempt to set external user id with callback
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 3. Make sure lastExternalUserIdResponse is equal to the expected response
+      JSONObject expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : true" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+
+      // 4. Attempt to set same exact external user id with callback
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 5. Make sure lastExternalUserIdResponse is equal to the expected response
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+   }
+
+   @Test
+   public void sendExternalUserId_withFailure_withCompletionHandler() throws Exception {
+      String testExternalId = "test_ext_id";
+
+      // 1. Init OneSignal
+      OneSignalInit();
+      threadAndTaskWait();
+
+      // 2. Attempt to set external user id with callback and force failure on the network requests
+      ShadowOneSignalRestClient.failAll = true;
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 3. Make sure lastExternalUserIdResponse is equal to the expected response
+      JSONObject expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : false" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+
+      // 4. Flip ShadowOneSignalRestClient.failAll flag back to false
+      ShadowOneSignalRestClient.failAll = false;
+
+      // 5. Attempt a second set external user id with callback
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 6. Make sure lastExternalUserIdResponse is equal to the expected response
+      expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : true" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+   }
+
+   @Test
+   public void sendExternalUserId_forPushAndEmail_withFailure_withCompletionHandler() throws Exception {
+      String testEmail = "test@onesignal.com";
+      String testExternalId = "test_ext_id";
+
+      // 1. Init OneSignal
+      OneSignalInit();
+      OneSignal.setEmail(testEmail);
+      threadAndTaskWait();
+
+      // 2. Attempt to set external user id with callback and force failure on the network requests
+      ShadowOneSignalRestClient.failAll = true;
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 3. Make sure lastExternalUserIdResponse has push and email with success : false
+      JSONObject expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : false" +
+              "   }," +
+              "   \"email\" : {" +
+              "      \"success\" : false" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+
+      // 4. Flip ShadowOneSignalRestClient.failAll flag back to false
+      ShadowOneSignalRestClient.failAll = false;
+
+      // 5. Attempt a second set external user id with callback
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 6. Make sure lastExternalUserIdResponse has push and email with success : true
+      expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : true" +
+              "   }," +
+              "   \"email\" : {" +
+              "      \"success\" : true" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+   }
+
+   @Test
+   public void sendExternalUserId_forPush_afterLoggingOutEmail_withCompletion() throws Exception {
+      String testEmail = "test@onesignal.com";
+      String testExternalId = "test_ext_id";
+
+      // 1. Init OneSignal and set email
+      OneSignalInit();
+      OneSignal.setEmail(testEmail);
+      threadAndTaskWait();
+
+      // 2. Logout Email
+      OneSignal.logoutEmail();
+      threadAndTaskWait();
+
+      // 4. Attempt a set external user id with callback
+      OneSignal.setExternalUserId(testExternalId, getExternalUserIdUpdateCompletionHandler());
+      threadAndTaskWait();
+
+      // 5. Make sure lastExternalUserIdResponse has push with success : true
+      JSONObject expectedExternalUserIdResponse = new JSONObject(
+              "{" +
+              "   \"push\" : {" +
+              "      \"success\" : true" +
+              "   }" +
+              "}"
+      );
+      assertEquals(expectedExternalUserIdResponse.toString(), lastExternalUserIdResponse.toString());
+   }
+
+   @Test
    public void testGetTagsQueuesCallbacks() throws Exception {
       final BlockingQueue<Boolean> queue = new ArrayBlockingQueue<>(2);
 
@@ -3937,7 +4234,6 @@ public class MainOneSignalClassRunner {
 
    private void OneSignalInit() {
       OneSignal.setLogLevel(OneSignal.LOG_LEVEL.DEBUG, OneSignal.LOG_LEVEL.NONE);
-      ShadowOSUtils.subscribableStatus = 1;
       OneSignal.init(blankActivity, "123456789", ONESIGNAL_APP_ID);
       blankActivityController.resume();
    }

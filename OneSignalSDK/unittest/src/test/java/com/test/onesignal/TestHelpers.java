@@ -3,18 +3,21 @@ package com.test.onesignal;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.app.job.JobService;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Looper;
-import android.support.annotation.Nullable;
 import android.os.SystemClock;
+import android.support.annotation.Nullable;
 
 import com.onesignal.OneSignalDbHelper;
 import com.onesignal.OneSignalPackagePrivateHelper;
-import com.onesignal.OneSignalPackagePrivateHelper.OSSessionManager;
-import com.onesignal.OneSignalPackagePrivateHelper.OneSignalPrefs;
 import com.onesignal.OneSignalPackagePrivateHelper.CachedUniqueOutcomeNotification;
+import com.onesignal.OneSignalPackagePrivateHelper.OSSessionManager;
+import com.onesignal.OneSignalPackagePrivateHelper.OSTestInAppMessage;
+import com.onesignal.OneSignalPackagePrivateHelper.OneSignalPrefs;
+import com.onesignal.OneSignalShadowPackageManager;
 import com.onesignal.OutcomeEvent;
 import com.onesignal.ShadowCustomTabsClient;
 import com.onesignal.ShadowDynamicTimer;
@@ -28,7 +31,7 @@ import com.onesignal.ShadowOSWebView;
 import com.onesignal.ShadowOneSignalDbHelper;
 import com.onesignal.ShadowOneSignalRestClient;
 import com.onesignal.ShadowOneSignalRestClientWithMockConnection;
-import com.onesignal.OneSignalShadowPackageManager;
+import com.onesignal.ShadowPushRegistratorADM;
 import com.onesignal.ShadowPushRegistratorGCM;
 import com.onesignal.StaticResetHelper;
 
@@ -44,12 +47,15 @@ import org.robolectric.util.Scheduler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.robolectric.Shadows.shadowOf;
 
 public class TestHelpers {
+
+   private static final long SIX_MONTHS_TIME_SECONDS = 6 * 30 * 24 * 60 * 60;
 
    static Exception lastException;
 
@@ -67,10 +73,9 @@ public class TestHelpers {
       ShadowOneSignalRestClient.resetStatics();
 
       ShadowPushRegistratorGCM.resetStatics();
+      ShadowPushRegistratorADM.resetStatics();
 
       ShadowNotificationManagerCompat.enabled = true;
-
-      ShadowOSUtils.subscribableStatus = 1;
 
       ShadowCustomTabsClient.resetStatics();
       ShadowGcmBroadcastReceiver.resetStatics();
@@ -90,6 +95,8 @@ public class TestHelpers {
       ShadowOSWebView.resetStatics();
 
       OneSignalShadowPackageManager.resetStatics();
+
+      ShadowOSUtils.resetStatics();
 
       lastException = null;
    }
@@ -125,15 +132,10 @@ public class TestHelpers {
    static void flushBufferedSharedPrefs() {
       OneSignalPrefs.WritePrefHandlerThread handlerThread = OneSignalPackagePrivateHelper.OneSignalPrefs.prefsHandler;
 
-      if (handlerThread.mHandler == null)
+      if (handlerThread.getLooper() == null)
          return;
-
-      synchronized (handlerThread.mHandler) {
-         if (handlerThread.getLooper() == null)
-            return;
-         Scheduler scheduler = shadowOf(handlerThread.getLooper()).getScheduler();
-         while (scheduler.runOneTask());
-      }
+      Scheduler scheduler = shadowOf(handlerThread.getLooper()).getScheduler();
+      while (scheduler.runOneTask());
    }
 
    // Join all OS_ threads
@@ -180,10 +182,10 @@ public class TestHelpers {
       do {
          // We run a 2nd time if we did not find any threads to ensure we don't skip any
          createdNewThread = runOSThreads() || runOSThreads();
-         
+
          boolean advancedRunnables = OneSignalPackagePrivateHelper.runAllNetworkRunnables();
          advancedRunnables = OneSignalPackagePrivateHelper.runFocusRunnables() || advancedRunnables;
-         
+
          if (advancedRunnables)
             createdNewThread = true;
       } while (createdNewThread);
@@ -331,6 +333,59 @@ public class TestHelpers {
       readableDatabase.close();
 
       return notifications;
+   }
+
+   synchronized static void saveIAM(OSTestInAppMessage inAppMessage) {
+      SQLiteDatabase writableDatabase = OneSignalDbHelper.getInstance(RuntimeEnvironment.application).getWritableDatabase();
+
+      ContentValues values = new ContentValues();
+      values.put(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_NAME_MESSAGE_ID, inAppMessage.messageId);
+      values.put(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_NAME_DISPLAY_QUANTITY, inAppMessage.getDisplayStats().getDisplayQuantity());
+      values.put(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_NAME_LAST_DISPLAY, inAppMessage.getDisplayStats().getLastDisplayTime());
+      values.put(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_CLICK_IDS, inAppMessage.getClickedClickIds().toString());
+      values.put(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_DISPLAYED_IN_SESSION, inAppMessage.isDisplayedInSession());
+
+      writableDatabase.insert(OneSignalPackagePrivateHelper.InAppMessageTable.TABLE_NAME, null, values);
+      writableDatabase.close();
+   }
+
+   synchronized static List<OSTestInAppMessage> getAllInAppMessages() throws JSONException {
+      SQLiteDatabase readableDatabase = OneSignalDbHelper.getInstance(RuntimeEnvironment.application).getReadableDatabase();
+      Cursor cursor = readableDatabase.query(
+              OneSignalPackagePrivateHelper.InAppMessageTable.TABLE_NAME,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+      );
+
+      List<OSTestInAppMessage> iams = new ArrayList<>();
+      if (cursor.moveToFirst()) {
+         do {
+            String messageId = cursor.getString(cursor.getColumnIndex(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_NAME_MESSAGE_ID));
+            String clickIds = cursor.getString(cursor.getColumnIndex(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_CLICK_IDS));
+            int displayQuantity = cursor.getInt(cursor.getColumnIndex(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_NAME_DISPLAY_QUANTITY));
+            long lastDisplay = cursor.getLong(cursor.getColumnIndex(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_NAME_LAST_DISPLAY));
+            boolean displayed = cursor.getInt(cursor.getColumnIndex(OneSignalPackagePrivateHelper.InAppMessageTable.COLUMN_DISPLAYED_IN_SESSION)) == 1;
+
+            JSONArray clickIdsArray = new JSONArray(clickIds);
+            Set<String> clickIdsSet = new HashSet<>();
+
+            for (int i = 0; i < clickIdsArray.length(); i++) {
+               clickIdsSet.add(clickIdsArray.getString(i));
+            }
+
+            OSTestInAppMessage inAppMessage = new OSTestInAppMessage(messageId, displayQuantity, lastDisplay, displayed, clickIdsSet);
+            iams.add(inAppMessage);
+         } while (cursor.moveToNext());
+      }
+
+      cursor.close();
+      readableDatabase.close();
+
+      return iams;
    }
 
    /**

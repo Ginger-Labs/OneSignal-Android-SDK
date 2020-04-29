@@ -31,7 +31,6 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -67,6 +66,9 @@ class OSUtils {
 
    static final int UNINITIALIZABLE_STATUS = -999;
 
+   public static int MAX_NETWORK_REQUEST_ATTEMPT_COUNT = 3;
+   static final int[] NO_RETRY_NETWROK_REQUEST_STATUS_CODES = {401, 402, 403, 404, 410};
+
    public enum SchemaType {
       DATA("data"),
       HTTPS("https"),
@@ -89,8 +91,17 @@ class OSUtils {
       }
    }
 
-   int initializationChecker(Context context, int deviceType, String oneSignalAppId) {
+   public static boolean shouldRetryNetworkRequest(int statusCode) {
+      for (int code : NO_RETRY_NETWROK_REQUEST_STATUS_CODES)
+         if (statusCode == code)
+            return false;
+
+      return true;
+   }
+
+   int initializationChecker(Context context, String oneSignalAppId) {
       int subscribableStatus = 1;
+      int deviceType = getDeviceType();
 
       try {
          //noinspection ResultOfMethodCallIgnored
