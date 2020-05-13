@@ -109,7 +109,9 @@ public class OneSignal {
    // If the app is this amount time or longer in the background we will count the session as done
    static final long MIN_ON_SESSION_TIME_MILLIS = 30 * 1_000L;
 
+   // Custom TB stuff
    public static OnInstantReplyListener onInstantReplyListener;
+   public static boolean useDefault = false;
 
    public interface OnInstantReplyListener {
       void onReply(String replyText, Intent intent);
@@ -2123,6 +2125,8 @@ public class OneSignal {
          trackFirebaseAnalytics.trackOpenedEvent(generateOsNotificationOpenResult(data, true, fromAlert));
 
       boolean defaultOpenActionDisabled = "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
+      if (useDefault)
+         defaultOpenActionDisabled = false
 
       startTheAppFromNotification(inContext, data, fromAlert, defaultOpenActionDisabled, notificationId);
 
