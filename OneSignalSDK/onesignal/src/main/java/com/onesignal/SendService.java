@@ -12,24 +12,25 @@ public class SendService extends Service {
 
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
-        Log.e(this.getClass().getSimpleName(), "onStartCommand: ");
-        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
+        if (intent != null) {
+            Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
 
-        if (remoteInput != null) {
-            final CharSequence replySeq = remoteInput.getCharSequence("key_reply");
-            if (replySeq != null) {
-                if (OneSignal.onInstantReplyListener != null) {
-                    Thread thread = new Thread() {
-                        public void run() {
-                            OneSignal.onInstantReplyListener.onReply(replySeq.toString(), intent);
-                        }
-                    };
-                    thread.start();
+            if (remoteInput != null) {
+                final CharSequence replySeq = remoteInput.getCharSequence("key_reply");
+                if (replySeq != null) {
+                    if (OneSignal.onInstantReplyListener != null) {
+                        Thread thread = new Thread() {
+                            public void run() {
+                                OneSignal.onInstantReplyListener.onReply(replySeq.toString(), intent);
+                            }
+                        };
+                        thread.start();
+                    } else {
+                        Log.e(this.getClass().getSimpleName(), "onReceive: Got instant reply but no onInstantReplyListener to fire.");
+                    }
                 } else {
-                    Log.e(this.getClass().getSimpleName(), "onReceive: Got instant reply but no onInstantReplyListener to fire.");
+                    Log.e(this.getClass().getSimpleName(), "onReceive: Instant reply CharSequence is null");
                 }
-            } else {
-                Log.e(this.getClass().getSimpleName(), "onReceive: Instant reply CharSequence is null");
             }
         }
         return START_STICKY;

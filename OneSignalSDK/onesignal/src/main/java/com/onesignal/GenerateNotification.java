@@ -1086,6 +1086,8 @@ class GenerateNotification {
 
                // Notification.Action instance added to Notification Builder.
                mBuilder.addAction(replyAction);
+            } else if (title.equalsIgnoreCase("archive")){
+               mBuilder.addAction(buttonIcon, title, null);
             } else {
                mBuilder.addAction(buttonIcon, title, buttonPIntent);
             }
