@@ -2126,7 +2126,7 @@ public class OneSignal {
 
       boolean defaultOpenActionDisabled = "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
       if (useDefault)
-         defaultOpenActionDisabled = false
+         defaultOpenActionDisabled = false;
 
       startTheAppFromNotification(inContext, data, fromAlert, defaultOpenActionDisabled, notificationId);
 
