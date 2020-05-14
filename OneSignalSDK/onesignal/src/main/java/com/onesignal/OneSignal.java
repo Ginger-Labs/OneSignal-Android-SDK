@@ -2125,7 +2125,6 @@ public class OneSignal {
          trackFirebaseAnalytics.trackOpenedEvent(generateOsNotificationOpenResult(data, true, fromAlert));
 
       boolean defaultOpenActionDisabled = useCustom || "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
-      Log.e(OneSignal.class.getCanonicalName(), "handleNotificationOpen: defaultOpenActionDisabled: " + defaultOpenActionDisabled);
       startTheAppFromNotification(inContext, data, fromAlert, defaultOpenActionDisabled, notificationId);
 
       runNotificationOpenedCallback(data, true, fromAlert);
