@@ -125,7 +125,7 @@ class NotificationOpenedProcessor {
       }
 
       if (intent.getBooleanExtra("isArchive", false)) {
-         OneSignal.useDefault = false;
+         OneSignal.useCustom = true;
       }
 
       if (!dismissed)
