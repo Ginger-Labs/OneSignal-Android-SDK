@@ -124,6 +124,10 @@ class NotificationOpenedProcessor {
          }
       }
 
+      if (intent.getBooleanExtra("isArchive", false)) {
+         OneSignal.useDefault = false;
+      }
+
       if (!dismissed)
          OneSignal.handleNotificationOpen(context, dataArray,
                  intent.getBooleanExtra("from_alert", false), OneSignal.getNotificationIdFromGCMJson(jsonData));

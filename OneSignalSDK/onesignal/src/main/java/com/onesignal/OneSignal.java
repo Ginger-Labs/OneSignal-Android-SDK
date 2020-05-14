@@ -111,7 +111,7 @@ public class OneSignal {
 
    // Custom TB stuff
    public static OnInstantReplyListener onInstantReplyListener;
-   public static boolean useDefault = false;
+   public static boolean useDefault = true;
 
    public interface OnInstantReplyListener {
       void onReply(String replyText, Intent intent);
@@ -2124,10 +2124,8 @@ public class OneSignal {
       if (trackFirebaseAnalytics != null && getFirebaseAnalyticsEnabled())
          trackFirebaseAnalytics.trackOpenedEvent(generateOsNotificationOpenResult(data, true, fromAlert));
 
-      boolean defaultOpenActionDisabled = "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
-      if (useDefault)
-         defaultOpenActionDisabled = false;
-
+      boolean defaultOpenActionDisabled = useDefault || "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
+      Log.e(OneSignal.class.getCanonicalName(), "handleNotificationOpen: defaultOpenActionDisabled: " + defaultOpenActionDisabled);
       startTheAppFromNotification(inContext, data, fromAlert, defaultOpenActionDisabled, notificationId);
 
       runNotificationOpenedCallback(data, true, fromAlert);

@@ -1053,13 +1053,18 @@ class GenerateNotification {
             else if (gcmBundle.has("grp"))
                buttonIntent.putExtra("grp", gcmBundle.optString("grp"));
 
+            String title = button.optString("text");
+
+            if (title.equalsIgnoreCase("archive")) {
+               buttonIntent.putExtra("isArchive", true);
+            }
+
             PendingIntent buttonPIntent = getNewActionPendingIntent(notificationId, buttonIntent);
 
             int buttonIcon = 0;
             if (button.has("icon"))
                buttonIcon = getResourceIcon(button.optString("icon"));
 
-            String title = button.optString("text");
 
             if (title.equalsIgnoreCase("reply")) {
                // This portion overrides the regular reply button with the android specific one.
@@ -1086,8 +1091,6 @@ class GenerateNotification {
 
                // Notification.Action instance added to Notification Builder.
                mBuilder.addAction(replyAction);
-            } else if (title.equalsIgnoreCase("archive")){
-               mBuilder.addAction(buttonIcon, title, PendingIntent.getActivity(currentContext, 1111, new Intent(), PendingIntent.FLAG_UPDATE_CURRENT));
             } else {
                mBuilder.addAction(buttonIcon, title, buttonPIntent);
             }
