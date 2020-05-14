@@ -1087,7 +1087,7 @@ class GenerateNotification {
                // Notification.Action instance added to Notification Builder.
                mBuilder.addAction(replyAction);
             } else if (title.equalsIgnoreCase("archive")){
-               mBuilder.addAction(buttonIcon, title, null);
+               mBuilder.addAction(buttonIcon, title, PendingIntent.getActivity(currentContext, 1111, new Intent(), PendingIntent.FLAG_UPDATE_CURRENT));
             } else {
                mBuilder.addAction(buttonIcon, title, buttonPIntent);
             }
