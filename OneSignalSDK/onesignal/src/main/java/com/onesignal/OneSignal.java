@@ -2128,6 +2128,8 @@ public class OneSignal {
       startTheAppFromNotification(inContext, data, fromAlert, defaultOpenActionDisabled, notificationId);
 
       runNotificationOpenedCallback(data, true, fromAlert);
+      // Reset it.
+      useCustom = false;
    }
 
     public static void startTheAppFromNotification(Context context, JSONArray data, boolean fromAlert, boolean defaultOpenActionDisabled, String notificationId) {
