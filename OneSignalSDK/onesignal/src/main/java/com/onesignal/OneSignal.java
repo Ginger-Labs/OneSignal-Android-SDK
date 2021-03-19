@@ -163,6 +163,14 @@ public class OneSignal {
       void notificationWillShowInForeground(OSNotificationReceivedEvent notificationReceivedEvent);
    }
 
+   // Custom TB stuff
+   public static OnInstantReplyListener onInstantReplyListener;
+   public static boolean useCustom = false;
+
+   public interface OnInstantReplyListener {
+      void onReply(String replyText, Intent intent);
+   }
+
    /**
     * An interface used to process a OneSignal notification the user just tapped on.
     * <br/>
@@ -2327,19 +2335,18 @@ public class OneSignal {
       if (trackFirebaseAnalytics != null && getFirebaseAnalyticsEnabled())
          trackFirebaseAnalytics.trackOpenedEvent(generateNotificationOpenedResult(data));
 
+      boolean defaultOpenActionDisabled = useCustom || "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
       boolean urlOpened = false;
-      boolean defaultOpenActionDisabled = "DISABLE".equals(OSUtils.getManifestMeta(context, "com.onesignal.NotificationOpened.DEFAULT"));
-
       if (!defaultOpenActionDisabled)
          urlOpened = openURLFromNotification(context, data);
-
-      logger.debug("handleNotificationOpen from context: " + context + " with fromAlert: " + fromAlert + " urlOpened: " + urlOpened + " defaultOpenActionDisabled: " + defaultOpenActionDisabled);
       // Check if the notification click should lead to a DIRECT session
       if (shouldInitDirectSessionFromNotificationOpen(context, fromAlert, urlOpened, defaultOpenActionDisabled)) {
          applicationOpenedByNotification(notificationId);
       }
 
-      runNotificationOpenedCallback(data);
+      runNotificationOpenedCallback(data, true, fromAlert);
+      // Reset it.
+      useCustom = false;
    }
 
    static void applicationOpenedByNotification(@Nullable final String notificationId) {

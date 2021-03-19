@@ -131,6 +131,9 @@ class NotificationOpenedProcessor {
          e.printStackTrace();
       }
 
+      if (intent.getBooleanExtra("isArchive", false)) {
+         OneSignal.useCustom = true;
+      }
       // We just opened a summary notification.
       if (summaryGroup != null)
          addChildNotifications(dataArray, summaryGroup, dbHelper);

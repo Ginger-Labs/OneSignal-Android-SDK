@@ -28,6 +28,8 @@
 package com.onesignal;
 
 import android.R.drawable;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.ContentValues;
@@ -40,6 +42,10 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.app.RemoteInput;
 import android.text.SpannableString;
 import android.text.style.StyleSpan;
 import android.widget.RemoteViews;
@@ -968,13 +974,47 @@ class GenerateNotification {
             else if (fcmJson.has("grp"))
                buttonIntent.putExtra("grp", fcmJson.optString("grp"));
 
+            String title = button.optString("text");
+
+            if (title.equalsIgnoreCase("archive")) {
+               buttonIntent.putExtra("isArchive", true);
+            }
+
             PendingIntent buttonPIntent = getNewActionPendingIntent(notificationId, buttonIntent);
 
             int buttonIcon = 0;
             if (button.has("icon"))
                buttonIcon = getResourceIcon(button.optString("icon"));
-            
-            mBuilder.addAction(buttonIcon, button.optString("text"), buttonPIntent);
+
+
+            if (title.equalsIgnoreCase("reply")) {
+               // This portion overrides the regular reply button with the android specific one.
+               String replyLabel = "Enter your reply here";
+
+               // Initialise RemoteInput
+               RemoteInput remoteInput = new RemoteInput.Builder( "key_reply")
+                       .setLabel(replyLabel)
+                       .build();
+
+               Intent sendIntent = new Intent(currentContext, SendService.class);
+               sendIntent.putExtra("notificationId", notificationId);
+               sendIntent.putExtra("notifdata", bundle.toString());
+               sendIntent.putExtra("buttondata", button.toString());
+
+               PendingIntent pendingIntent = PendingIntent.getService(currentContext, notificationId, sendIntent, 0);
+
+               // Notification Action with RemoteInput instance added.
+               NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
+                       buttonIcon, title, pendingIntent)
+                       .addRemoteInput(remoteInput)
+                       .setAllowGeneratedReplies(true)
+                       .build();
+
+               // Notification.Action instance added to Notification Builder.
+               mBuilder.addAction(replyAction);
+            } else {
+               mBuilder.addAction(buttonIcon, title, buttonPIntent);
+            }
          }
       } catch (Throwable t) {
          t.printStackTrace();
