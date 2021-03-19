@@ -120,6 +120,10 @@
           android:name="com.onesignal.NotificationOpenedReceiver"
           android:noHistory="true"
           android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <service
+            android:name="com.onesignal.SendService"
+            android:enabled="true"
+            android:exported="true"/>
 
     </application>
 
