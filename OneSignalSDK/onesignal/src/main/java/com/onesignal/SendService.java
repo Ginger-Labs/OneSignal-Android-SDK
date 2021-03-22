@@ -4,8 +4,8 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
-import android.support.v4.app.RemoteInput;
+import androidx.annotation.Nullable;
+import androidx.core.app.RemoteInput;
 import android.util.Log;
 
 public class SendService extends Service {

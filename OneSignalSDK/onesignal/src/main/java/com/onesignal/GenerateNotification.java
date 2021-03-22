@@ -42,7 +42,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
-import android.support.v4.app.RemoteInput;
+import androidx.core.app.RemoteInput;
 import android.text.SpannableString;
 import android.text.style.StyleSpan;
 import android.widget.RemoteViews;

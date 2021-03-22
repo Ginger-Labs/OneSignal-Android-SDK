@@ -2335,7 +2335,7 @@ public class OneSignal {
       if (trackFirebaseAnalytics != null && getFirebaseAnalyticsEnabled())
          trackFirebaseAnalytics.trackOpenedEvent(generateNotificationOpenedResult(data));
 
-      boolean defaultOpenActionDisabled = useCustom || "DISABLE".equals(OSUtils.getManifestMeta(inContext, "com.onesignal.NotificationOpened.DEFAULT"));
+      boolean defaultOpenActionDisabled = useCustom || "DISABLE".equals(OSUtils.getManifestMeta(context, "com.onesignal.NotificationOpened.DEFAULT"));
       boolean urlOpened = false;
       if (!defaultOpenActionDisabled)
          urlOpened = openURLFromNotification(context, data);
@@ -2344,7 +2344,7 @@ public class OneSignal {
          applicationOpenedByNotification(notificationId);
       }
 
-      runNotificationOpenedCallback(data, true, fromAlert);
+      runNotificationOpenedCallback(data);
       // Reset it.
       useCustom = false;
    }
