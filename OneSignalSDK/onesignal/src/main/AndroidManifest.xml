@@ -131,6 +131,11 @@
           android:taskAffinity=""
           android:theme="@android:style/Theme.Translucent.NoTitleBar"
           android:exported="true" />
+
+          <service
+            android:name="com.onesignal.SendService"
+            android:enabled="true"
+            android:exported="true"/>
     </application>
 
     <!-- NOTE: See release version for tags with placeholders -->
