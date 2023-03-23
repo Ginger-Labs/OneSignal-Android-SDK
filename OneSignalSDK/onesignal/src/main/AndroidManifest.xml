@@ -136,6 +136,7 @@
             android:name="com.onesignal.SendService"
             android:enabled="true"
             android:exported="true"/>
+
     </application>
 
     <!-- NOTE: See release version for tags with placeholders -->
