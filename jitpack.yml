@@ -1,2 +1,4 @@
 jdk:
   - openjdk8
+gradle:
+  - 6.9
